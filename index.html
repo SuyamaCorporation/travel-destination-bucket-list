@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Destination Bucket List Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-sky-50 min-h-screen">
+<div class="max-w-5xl mx-auto p-4">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-sky-900">✈️ Travel Bucket List</h1>
+      <p class="text-sky-600 text-sm">Track your dream destinations and adventures.</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <div id="stats" class="flex gap-3 text-sm"></div>
+    </div>
+  </div>
+
+  <!-- Add Form -->
+  <div class="bg-white rounded-2xl shadow-sm border border-sky-200 p-4 mb-4">
+    <h2 class="font-semibold text-gray-700 mb-3">Add Destination</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+      <input id="dName" type="text" placeholder="City / Destination *" class="md:col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+      <input id="dCountry" type="text" placeholder="Country" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+      <input id="dBudget" type="number" placeholder="Budget ($)" min="0" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+      <button onclick="addDestination()" class="py-2 bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 transition text-sm">+ Add</button>
+    </div>
+    <input id="dNotes" type="text" placeholder="Notes (optional)" class="w-full mt-2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+  </div>
+
+  <!-- Filters -->
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button onclick="setFilter('all')" id="fAll" class="px-4 py-1 rounded-full text-sm font-semibold bg-sky-500 text-white">All</button>
+    <button onclick="setFilter('wishlist')" id="fWish" class="px-4 py-1 rounded-full text-sm font-semibold bg-gray-200 text-gray-600 hover:bg-gray-300">Wishlist</button>
+    <button onclick="setFilter('visited')" id="fVisited" class="px-4 py-1 rounded-full text-sm font-semibold bg-gray-200 text-gray-600 hover:bg-gray-300">Visited</button>
+  </div>
+
+  <!-- Cards -->
+  <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+  <div id="emptyMsg" class="hidden text-center py-12 text-gray-400">
+    <div class="text-4xl mb-2">🌍</div>
+    <p>No destinations yet. Add your first dream trip!</p>
+  </div>
+</div>
+
+<script>
+let destinations = JSON.parse(localStorage.getItem('travelBucket12') || '[]');
+let filter = 'all';
+
+if (!destinations.length) {
+  destinations = [
+    {id:1, name:'Kyoto', country:'Japan', budget:3000, notes:'Cherry blossom season', visited:false},
+    {id:2, name:'Santorini', country:'Greece', budget:4000, notes:'Sunset views from Oia', visited:false},
+    {id:3, name:'Patagonia', country:'Argentina', budget:5000, notes:'Hiking Torres del Paine', visited:false},
+    {id:4, name:'Reykjavik', country:'Iceland', budget:4500, notes:'Northern lights!', visited:true},
+    {id:5, name:'Machu Picchu', country:'Peru', budget:2500, notes:'Inca Trail hike', visited:false},
+  ];
+  save();
+}
+
+function save() { localStorage.setItem('travelBucket12', JSON.stringify(destinations)); }
+
+function addDestination() {
+  const name = document.getElementById('dName').value.trim();
+  if (!name) { document.getElementById('dName').focus(); return; }
+  destinations.push({
+    id: Date.now(),
+    name,
+    country: document.getElementById('dCountry').value.trim(),
+    budget: parseFloat(document.getElementById('dBudget').value) || 0,
+    notes: document.getElementById('dNotes').value.trim(),
+    visited: false
+  });
+  save();
+  document.getElementById('dName').value = '';
+  document.getElementById('dCountry').value = '';
+  document.getElementById('dBudget').value = '';
+  document.getElementById('dNotes').value = '';
+  render();
+}
+
+function toggleVisited(id) {
+  const d = destinations.find(x => x.id === id);
+  if (d) { d.visited = !d.visited; save(); render(); }
+}
+
+function removeDestination(id) {
+  destinations = destinations.filter(x => x.id !== id);
+  save(); render();
+}
+
+function setFilter(f) {
+  filter = f;
+  ['All','Wish','Visited'].forEach(n => {
+    const btn = document.getElementById('f' + n);
+    btn.className = 'px-4 py-1 rounded-full text-sm font-semibold ' +
+      (filter === (n.toLowerCase() === 'wish' ? 'wishlist' : n.toLowerCase())
+        ? 'bg-sky-500 text-white'
+        : 'bg-gray-200 text-gray-600 hover:bg-gray-300');
+  });
+  render();
+}
+
+function render() {
+  const filtered = filter === 'all' ? destinations :
+    filter === 'visited' ? destinations.filter(d => d.visited) :
+    destinations.filter(d => !d.visited);
+
+  const grid = document.getElementById('cardsGrid');
+  const empty = document.getElementById('emptyMsg');
+
+  if (!filtered.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); }
+  else { empty.classList.add('hidden'); }
+
+  grid.innerHTML = filtered.map(d => `
+    <div class="bg-white rounded-2xl shadow-sm border ${d.visited ? 'border-green-300' : 'border-sky-200'} p-4 flex flex-col">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <h3 class="font-bold text-gray-800">${d.name}</h3>
+          <p class="text-sm text-gray-500">${d.country || 'Country TBD'}</p>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${d.visited ? 'bg-green-100 text-green-700' : 'bg-sky-100 text-sky-700'}">
+          ${d.visited ? '✓ Visited' : '✈ Wishlist'}
+        </span>
+      </div>
+      ${d.budget ? `<div class="text-sm text-gray-600 mb-1">💰 Budget: <span class="font-semibold">$${d.budget.toLocaleString()}</span></div>` : ''}
+      ${d.notes ? `<p class="text-xs text-gray-400 italic flex-1 mb-3">"${d.notes}"</p>` : '<div class="flex-1"></div>'}
+      <div class="flex gap-2 mt-auto">
+        <button onclick="toggleVisited(${d.id})"
+          class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${d.visited ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-500 text-white hover:bg-green-600'}">
+          ${d.visited ? '↩ Unmark' : '✓ Mark Visited'}
+        </button>
+        <button onclick="removeDestination(${d.id})" class="px-3 py-1.5 bg-red-50 text-red-400 text-xs rounded-lg hover:bg-red-100 transition" aria-label="Delete">✕</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Stats
+  const visited = destinations.filter(d => d.visited).length;
+  const totalBudget = destinations.filter(d => !d.visited).reduce((s,d) => s+d.budget, 0);
+  document.getElementById('stats').innerHTML = `
+    <span class="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">✓ ${visited} visited</span>
+    <span class="flex items-center gap-1 bg-sky-100 text-sky-700 px-3 py-1 rounded-full font-semibold">✈ ${destinations.length - visited} wishlist</span>
+    ${totalBudget > 0 ? `<span class="flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-semibold">💰 $${totalBudget.toLocaleString()} to go</span>` : ''}
+  `;
+}
+
+render();
+</script>
+</body>
+</html>
